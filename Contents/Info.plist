@@ -10,5 +10,16 @@
 	<string>Agent</string>
 	<key>PlexPluginCodePolicy</key>
 	<string>Elevated</string>
+
+	<key>PlexPluginName</key>
+    <string>Personal Shows</string>
+    <key>PlexPluginDescription</key>
+    <string>Local/filename-first agent for personal TV shows with meta.json support.</string>
+    <key>PlexPluginAuthor</key>
+    <string>CarsonDDD, and originally suparngp</string>
+    <key>PlexPluginVersion</key>
+    <string>2025.10.11</string>
+    <key>PlexPluginHomepage</key>
+    <string>https://github.com/suparngp/plex-personal-shows-agent.bundle</string>
 </dict>
 </plist>
