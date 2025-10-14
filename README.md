@@ -1,73 +1,11 @@
-# 2025 Fixes
-
-removed `_` prefix on functions, as thats a nono.
-
-Original guide still works. meta.json is needed. **Episode titles now work properly!!!!!!!** 
-
-per-episode posters are done with having the `jpg`|`jpeg`|`png`|`webp` of the exact same name.
-ex: `S1E10 - 10 Paul And The New Testament.mp4`; poster: `S1E10 - 10 Paul And The New Testament.jpg`
-
-
-todo:
-- [x] Per Season Meta
-- [x] Per Episode Meta
-- [ ] Potentially change name formatting to be more plex-y 
-
-# New Structure
-
-`Test Show`
-- `Season 01`
-	- `cover.jpg` — Season level cover
-	- `meta.json` — Season level poster
-	- `S1E1 - episode title.mp4`
-	- `S1E1 - episode title.jpg`
-	- `S1E1 - episode title.meta`
-- `cover.jpg` — Show level cover (will probably overwritten by season, but thats ok)
-- `meta.json` — Show level meta 
-
-## Show level Json
-
-```json
-{
-  "studio": "@profjeffreykaplan",
-  "summary": "Channel/playlist overview.",
-  "originally_available_at": "2021-06-04",
-  "genres": ["Philosophy", "History", "Politics"],
-  "collections": ["My Collection"],
-  "actors": [
-    {"name": "Jeffrey Kaplan", "role": "Host", "photo": "https://..."}
-  ],
-}
-```
-
-## Season Level Meta
-
-```json
-{
-  "summary": "Season/playlist description.",
-  "originally_available_at": "2021-06-04",
-}
-```
-
-
-## Episode Level Meta
-```json
-{
-  "title": "Optional overridden title",
-  "summary": "YouTube description",
-  "originally_available_at": "2021-06-04",
-  "rating": 7.8,
-  "actors": [{"name": "Jeffrey Kaplan", "role": "Host"}],
-  "writers": [{"name": "Jeffrey Kaplan"}]
-}
-```
-
-
----
----
----
-
 # Personal Shows Metadata Agent For Plex
+
+2025: This repo is RESSURECTED!!! **Episode titles now work properly!!!!!!!** 
+
+Now works with current version of plex on October 14th 2025.
+
+Todo:
+- [ ] Fix and publish my youtube playlist downloader. This downloads a playlist, and automatically generates metadata and structures the output for this scanner.
 
 This agent helps manage personal shows like tutorials, home videos which are not available on TVDB or any other online metadata sources.
 
@@ -78,7 +16,8 @@ This agent helps manage personal shows like tutorials, home videos which are not
 1. Episodes will derive their names from the file names excluding the `S1E1` part to make them cleaner.
 1. Each Show can have its custom poster.
 1. Each Season can have its custom poster.
-1. You can also add a set of values for fields like `studio`, `cast` etc.
+1. Each Episode can have its custom thumbnail.
+1. You can also add a set of values for fields much like other media
 
 ![Show View](docs/show.png)
 
@@ -89,7 +28,7 @@ This agent helps manage personal shows like tutorials, home videos which are not
 1. Download the latest release zip from the Releases Page.
 1. Extract.
 1. Delete the `docs` folder if you think the size is too big. It contains the images shown in this readme.
-1. ~~Rename the downloaded folder from `---.bundle-master` to `---.bundle`.~~ Keep it as `plex-personal-shows-agent.bundle`
+1. Rename the downloaded folder from `---.bundle-master` to `---.bundle`.
 1. Place it in `~/Library/Application Support/Plex Media Server/Plug-Ins` directory.
 
 
@@ -112,35 +51,88 @@ Just note that the credentials never leave your network as long as your plex is 
 Name your shows in the following manner:
 
 ```
-Tutorials
---- Guitar Scales # This is the show name
+Media Library
+--- Test Show # This is the show name
 ------ cover.jpg # default poster for the show
------- The Ionian Mode # This is the Season or group name
+------ meta.json # Show level meta
+------ Season 01 # This is the Season or group name, it can be renamed INSIDE plex (maybe later ill add feature to define its name inside the meta)
 ---------- cover.jpg # default poster for the season
----------- S1E0 - Introduction.xxx # This is the first episode of season 1. You can use E1 as well.
+---------- meta.json # Season level meta
+---------- s1e1 - episode one.mp4 # Video file
+---------- s1e1 - episode one.jpg # Thumbnail for episode
+---------- s1e1 - episode one.json # meta data for the episode
+---------- s1e2 - episode two.mp4
+---------- s1e2 - episode two.jpg
+---------- s1e2 - episode two.json
+...
 ```
+
+posters/covers are done with having the `jpg`|`jpeg`|`png`|`webp` of the exact same name.
+ex: `S1E10 - 10 Paul And The New Testament.mp4`; poster: `S1E10 - 10 Paul And The New Testament.jpg`
+
+I believe most of these are optional, I havnt tried it, but it works atleast if you have the meta, with empty params.
+
 ![Directory View](docs/directory.png)
 
 #### Just make sure that you DON'T pad the season and episode numbers for 0s. For example, use S1E1 instead of S01E01. Otherwise, the Episode names will contain S01E01 section in plex as well.
 
+---
 
-## Additional Metadata
+## Additional/Example Metadata
 
 You can add additional metadata like posters etc. To do that, create a `meta.json` file in the root of your TV Show. For example, `Guitar Scales/meta.json`. Following keys are available
 
-```
+
+Here are all the possible fields accepted:
+
+
+### Show level Json
+
+```json
 {
-    "actors": [{
-        "name": "Danny Gill",
-        "role": "Guitarist",
-        "photo": "https://example.com/actor_avatar" // This must be a URL. It seems like plex does not support local files for cast.
-    }],
-    "publisher": "Lick Library",
-    "tags": ["Tutorials", "Guitar", "Music Theory"],
-    "show_thumbnail": "https://example.com/show_poster", // defaults to cover.jpg in the show root folder. can be a relative path in show folder
-    "season_thumbnails": {
-        "1": "https://example.com/season_1_poster", // defaults to cover.jpg in the season folder
-        "2": "poster.png" // season_2/poster.png relative path to the cover in season folder
+  "studio": "Homemade Studios",
+  "summary": "This is a summery for the 'Show'",
+  "originally_available_at": "2020-03-09",
+  "genres": [],
+  "collections": [],
+  "actors": [
+    {
+      "name": "Jim Bob",
+      "role": "That dude",
+      "photo": "http url to profile picture"
     }
+  ]
 }
+```
+
+### Season Level Meta
+
+```json
+{
+  "summary": "This season is about how episodes are a thing!",
+}
+```
+
+
+### Episode Level Meta
+```json
+{
+  "title": "Episode Title",
+  "summary": "This is a description of the episode!",
+  "originally_available_at": "2020-03-10",
+  "rating": 7.3,
+  "writers": [
+    {
+      "name": "Joe Blow",
+      "photo": "http url to profile picture"
+    }
+  ],
+  "directors": [
+    {
+      "name": "Smoe Doe",
+      "photo": "http url to profile picture"
+    }
+  ]
+}
+
 ```
