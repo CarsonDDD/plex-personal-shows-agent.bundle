@@ -7,41 +7,65 @@ Original guide still works. meta.json is needed. **Episode titles now work prope
 per-episode posters are done with having the `jpg`|`jpeg`|`png`|`webp` of the exact same name.
 ex: `S1E10 - 10 Paul And The New Testament.mp4`; poster: `S1E10 - 10 Paul And The New Testament.jpg`
 
-> try media agent
-> no luck
-> spend hours understanding how it works
-> Find error codes in logs
-> Litter code with logs to see whats casusing issues
-> Find some suspicious parts of code 
-> Fix main issue and get titles working
-> Start fixing other issues at once to clear all errors
-> abstract away big parts into helper functions so I can change their formatting later
-> start refactoring code
-> 4 hours later
-> decide to test things out
-> still works
-> start documenting main changes on which fixed the issues
-> Forget what the issues were
-> Compare new code to old code
-> Looks for the most part identical
-> Remove changes and re-use the old version to trigger the errors again
-> No errors on the error version
-> 4 hours later
-> Do the plex dance
-> Fresh media
-> run error-version
-> no errors, everything works perfectly
-> 2 hours later
-> no errors, nothing happens. As desired and expected.
-> Test working version
-> no errors, nothing happens. Not desired and not expected.
-> 4 hours later
-> things work again
-> this is all the docs your gonna get
 
-Issues were like a function prefixed with `_`, some bad error catching which stopped everything, bad requests or something, and like a few other things. (not null checking/getting the wrong thing?!)
+todo:
+- [x] Per Season Meta
+- [x] Per Episode Meta
+- [ ] Potentially change name formatting to be more plex-y 
 
-I dont remember anything
+# New Structure
+
+`Test Show`
+- `Season 01`
+	- `cover.jpg` — Season level cover
+	- `meta.json` — Season level poster
+	- `S1E1 - episode title.mp4`
+	- `S1E1 - episode title.jpg`
+	- `S1E1 - episode title.meta`
+- `cover.jpg` — Show level cover (will probably overwritten by season, but thats ok)
+- `meta.json` — Show level meta 
+
+## Show level Json
+
+```json
+{
+  "studio": "@profjeffreykaplan",
+  "summary": "Channel/playlist overview.",
+  "originally_available_at": "2021-06-04",
+  "genres": ["Philosophy", "History", "Politics"],
+  "collections": ["My Collection"],
+  "actors": [
+    {"name": "Jeffrey Kaplan", "role": "Host", "photo": "https://..."}
+  ],
+}
+```
+
+## Season Level Meta
+
+```json
+{
+  "summary": "Season/playlist description.",
+  "originally_available_at": "2021-06-04",
+}
+```
+
+
+## Episode Level Meta
+```json
+{
+  "title": "Optional overridden title",
+  "summary": "YouTube description",
+  "originally_available_at": "2021-06-04",
+  "rating": 7.8,
+  "actors": [{"name": "Jeffrey Kaplan", "role": "Host"}],
+  "writers": [{"name": "Jeffrey Kaplan"}]
+}
+```
+
+
+---
+---
+---
 
 # Personal Shows Metadata Agent For Plex
 

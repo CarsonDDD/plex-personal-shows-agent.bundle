@@ -6,6 +6,10 @@ from Helpers import (
     parse_available_at,
     episode_fields_from_filename,
     episode_poster_image_path,
+    load_json_if_exists,
+    load_episode_meta,
+    find_episode_meta_path,
+    apply_roles
 )
 
 class PersonalShowsAgent(Agent.TV_Shows):
@@ -81,13 +85,14 @@ class PersonalShowsAgent(Agent.TV_Shows):
 
         # Fallback: find the first playable file anywhere
         if not first_episode_path:
-            for season_obj in media.seasons.items():
-                for episode_obj in season_obj.episodes.items():
-                    if episode_obj.items and episode_obj.items[0].parts:
-                        first_episode_path = episode_obj.items[0].parts[0].file
+            for s in media.seasons.values():
+                for e in s.episodes.values():
+                    if e.items and e.items[0].parts:
+                        first_episode_path = e.items[0].parts[0].file
                         break
                 if first_episode_path:
                     break
+
 
         if not first_episode_path:
             Log.Warn('No playable media parts found; skipping update()')
@@ -114,8 +119,10 @@ class PersonalShowsAgent(Agent.TV_Shows):
 
         if meta_json:
             Log.Info('Loaded meta.json: %s' % meta_json)
-            metadata.summary = meta_json.get('summary', '')
-            metadata.studio = meta_json.get('publisher', '')
+
+            # More plexy variable names
+            metadata.summary = meta_json.get('summary') or meta_json.get('description', '')
+            metadata.studio = meta_json.get('studio') or meta_json.get('publisher', '')
 
             # Only set the date if valid
             show_date = parse_available_at(meta_json)
@@ -128,8 +135,8 @@ class PersonalShowsAgent(Agent.TV_Shows):
                 metadata.collections.add(collections)
 
             metadata.genres.clear()
-            for genre in meta_json.get('tags', []):
-                metadata.genres.add(genre)
+            for g in (meta_json.get('genres') or meta_json.get('tags', [])):
+                metadata.genres.add(g)
 
             metadata.roles.clear()
             for actor in meta_json.get('actors', []):
@@ -140,12 +147,13 @@ class PersonalShowsAgent(Agent.TV_Shows):
 
 
             clear_posters(metadata)
-            self.update_poster(metadata, meta_json.get('show_thumbnail', 'cover.jpg'), show_path)
+            poster_name = meta_json.get('show_thumbnail') or 'cover.jpg'
+            self.update_poster(metadata, poster_name, show_path)
 
         # ---- seasons / episodes
         for season_index, season_object in media.seasons.items():
             season_metadata = metadata.seasons[season_index]
-            episode_keys = season_object.episodes.keys() # removed list wrap/sort meme (my own stuff) todo: test that change
+            episode_keys = sorted(season_object.episodes.keys(), key=lambda k: int(k)) # episode_keys = season_object.episodes.keys() # removed list wrap/sort meme (my own stuff) todo: test that change
             first_episode_path = season_object.episodes[episode_keys[0]].items[0].parts[0].file
             season_path = os.path.normpath(os.path.join(first_episode_path, '..')) # Episodes are not folders ...... TODO: IF EPISODES EVER BECOME FOLDERS, THE CHANGES NEED TO BE MADE HERE.
             season_name = os.path.basename(season_path)
@@ -153,17 +161,27 @@ class PersonalShowsAgent(Agent.TV_Shows):
             # season poster + summary
             season_summary = season_name # default value
 
+            season_file_meta = load_json_if_exists(os.path.join(season_path, 'meta.json'))
+
             clear_posters(season_metadata)
-            if meta_json and 'seasons' in meta_json and season_index in meta_json['seasons']:
+
+            # Poster: always use our convention cover.jpg inside the season folder
+            self.update_poster(season_metadata, 'cover.jpg', season_path)
+
+            # Now use season specific meta
+            if season_file_meta and season_file_meta.get('summary'):
+                season_summary = ('%s\n%s' % (season_name, season_file_meta['summary'])).strip()
+            elif meta_json and 'seasons' in meta_json and season_index in meta_json['seasons']:
                 season_meta_json = meta_json['seasons'][season_index]
-
-                self.update_poster(season_metadata, season_meta_json.get('poster', 'cover.jpg'), season_path)
                 season_summary = ('%s\n%s' % (season_name, season_meta_json.get('summary', ''))).strip()
-            else:
-                self.update_poster(season_metadata, 'cover.jpg', season_path)
-
 
             season_metadata.summary = season_summary
+
+            # Date: set if Season meta has originally_available_at (or legacy available_at)
+            if season_file_meta:
+                s_date = parse_available_at(season_file_meta)
+                if s_date:
+                    season_metadata.originally_available_at = s_date
 
             # here is the big change. We no longer crash when the api fails!!!!
             try:
@@ -171,7 +189,7 @@ class PersonalShowsAgent(Agent.TV_Shows):
             except Exception as ex:
                 Log.Warn('update_season failed for season %s: %s' % (season_index, ex))
 
-            # episodes
+            # ------------- episodes ----------------
             for episode_index, episode_object in season_object.episodes.items():
                 episode_metadata = season_metadata.episodes[episode_index]
 
@@ -179,10 +197,38 @@ class PersonalShowsAgent(Agent.TV_Shows):
                     continue
 
                 episode_path = episode_object.items[0].parts[0].file
+                ep_meta = load_episode_meta(episode_path)
+                if ep_meta is None:
+                    Log.Info('No episode meta for: %s' % episode_path)
+                else:
+                    Log.Info('Loaded episode meta for: %s' % episode_path)
 
-                # Title from filename
+
+                # Title from meta then filename if not inside meta
                 _, _, title = episode_fields_from_filename(episode_path)
-                episode_metadata.title = title
+                episode_metadata.title = (ep_meta.get('title') if ep_meta and ep_meta.get('title') else title)# episode_metadata.title = title
+
+
+                # Summary
+                if ep_meta and (ep_meta.get('summary') or ep_meta.get('description')):
+                    episode_metadata.summary = ep_meta.get('summary') or ep_meta.get('description')
+
+                # Date
+                ep_date = parse_available_at(ep_meta) if ep_meta else None
+                if ep_date:
+                    episode_metadata.originally_available_at = ep_date
+
+                # Rating
+                if ep_meta and 'rating' in ep_meta:
+                    try:
+                        episode_metadata.rating = float(ep_meta['rating'])
+                    except Exception:
+                        Log.Warn('Invalid rating in %s: %r' % (episode_path, ep_meta.get('rating')))
+
+                # Roles (actors/writers)
+                if ep_meta and (ep_meta.get('actors') or ep_meta.get('writers')):
+                    apply_roles(episode_metadata.roles, ep_meta)
+
 
                 # Episode poster/thumbnail (new feature, but needed!). poster is just the video, but with image extension
                 poster_path = episode_poster_image_path(episode_path)
