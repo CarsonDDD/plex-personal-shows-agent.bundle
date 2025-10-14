@@ -86,7 +86,7 @@ You can add additional metadata like posters etc. To do that, create a `meta.jso
 Here are all the possible fields accepted:
 
 
-### Show level Json
+### Show level Json (`Show/meta.json`)
 
 ```json
 {
@@ -105,7 +105,7 @@ Here are all the possible fields accepted:
 }
 ```
 
-### Season Level Meta
+### Season Level Meta (`Show/Season 1/meta.json`)
 
 ```json
 {
@@ -114,7 +114,7 @@ Here are all the possible fields accepted:
 ```
 
 
-### Episode Level Meta
+### Episode Level Meta (`Show/Season X/sXeX - episode.json`)
 ```json
 {
   "title": "Episode Title",
